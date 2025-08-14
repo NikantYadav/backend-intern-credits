@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MySQL connection string for async operations
-DATABASE_URL = os.getenv("DATABASE_URL", "mysql+aiomysql://user:password@localhost:3306/database")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create async engine
 engine = create_async_engine(
