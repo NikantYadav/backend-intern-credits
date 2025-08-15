@@ -1,13 +1,18 @@
 from fastapi import FastAPI
 from routes.credits import router as credits_router
 from routes.users import router as users_router
-from routes.admin import router as admin_router
 from routes.schema import router as schema_router
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from contextlib import asynccontextmanager
 from scheduler import start_scheduler, stop_scheduler
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+HOST = os.getenv("HOST")
+PORT = int(os.getenv("PORT"))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,13 +42,8 @@ app.add_middleware(
 # Include routers
 app.include_router(credits_router)
 app.include_router(users_router)
-app.include_router(admin_router)
 app.include_router(schema_router)
 
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
 
 @app.get("/health")
 async def health_check():
@@ -51,4 +51,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=HOST, port=PORT)
