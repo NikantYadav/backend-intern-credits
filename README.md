@@ -1,400 +1,122 @@
 # Credits API
 
-A FastAPI-based credits management system with user management, automated daily credits, and dynamic schema management.
+A FastAPI-based REST API for managing user credits with automated background tasks.
 
 ## Features
 
-- User management with email validation
-- Credits system with balance tracking
-- Automated daily credit distribution (5 credits at midnight UTC)
-- Dynamic database schema management
-- MySQL database with async operations
-- Background job scheduling
+- User management (create, read, update, delete)
+- Credits system with automatic daily credit allocation
+- Background scheduler for automated tasks
+- MySQL database with async SQLAlchemy
+- CORS enabled for cross-origin requests
+- Health check endpoint
 
-## Setup
+## Tech Stack
 
-### Prerequisites
+- **Framework**: FastAPI
+- **Database**: MySQL with async SQLAlchemy
+- **Background Tasks**: APScheduler
+- **Server**: Uvicorn
+- **Environment**: Python 3.8+
 
-- Python 3.10+
-- MySQL database
-- pip or uv package manager
+## Prerequisites
 
-### Installation
+- Python 3.8 or higher
+- MySQL server running
 
-1. Install dependencies:
+## Setup Instructions
+
+### 1. Clone and Navigate
 ```bash
+git clone <repository-url>
+cd <project-directory>
+```
+
+### 2. Create Virtual Environment
+```bash
+python -m venv env
+source env/bin/activate  
+```
+
+### 3. Install Dependencies
+```bash
+cd src
 pip install -r requirements.txt
 ```
 
-2. Configure environment variables in `.env`:
-```env
-DATABASE_URL=mysql+aiomysql://username:password@localhost:3306/database_name
+### 4. Database Setup
+Make sure MySQL is running and create a database:
+```sql
+CREATE DATABASE `database_name`;
+CREATE USER 'username'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON `database_name`.* TO 'username'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-3. Run the application:
+### 5. Environment Configuration
+Create a `.env` file in the root directory with:
+```
+DATABASE_URL=mysql+aiomysql://username:password@localhost:3306/database_name
+HOST=0.0.0.0
+PORT=8000
+```
+
+Replace `username`, `password`, and `database_name` with your actual database credentials.
+
+## Running the Application
+
+### Development Mode
 ```bash
 python src/main.py
 ```
 
-The server will start on `http://localhost:8000`
-
-## API Documentation
-
-### Base URL
-```
-http://localhost:8000
+### Production Mode with Uvicorn
+```bash
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## User Management
+The API will be available at:
+- **API**: http://localhost:8000
+- **Interactive Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
 
-### Create User
-**POST** `/users/`
-
-Create a new user with email and name.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "name": "John Doe"
-}
-```
-
-**Response:**
-```json
-{
-  "user_id": 1,
-  "email": "user@example.com",
-  "name": "John Doe"
-}
-```
-
-### Get User
-**GET** `/users/{user_id}`
-
-Retrieve user information by ID.
-
-**Response:**
-```json
-{
-  "user_id": 1,
-  "email": "user@example.com",
-  "name": "John Doe"
-}
-```
-
-## Credits Management
-
-### Get Credits
-**GET** `/api/credits/{user_id}`
-
-Retrieve current credit balance and last update timestamp.
-
-**Response:**
-```json
-{
-  "user_id": 1,
-  "credits": 150,
-  "last_updated": "2025-01-14T12:30:45.123456"
-}
-```
-
-### Add Credits
-**POST** `/api/credits/{user_id}/add`
-
-Add credits to a user's account.
-
-**Request Body:**
-```json
-{
-  "amount": 100
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Added 100 credits",
-  "user_id": 1,
-  "new_balance": 250,
-  "last_updated": "2025-01-14T12:35:20.654321"
-}
-```
-
-### Deduct Credits
-**POST** `/api/credits/{user_id}/deduct`
-
-Subtract credits from a user's account (prevents negative balances).
-
-**Request Body:**
-```json
-{
-  "amount": 50
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Deducted 50 credits",
-  "user_id": 1,
-  "new_balance": 200,
-  "last_updated": "2025-01-14T12:40:15.789012"
-}
-```
-
-**Error Response (Insufficient Credits):**
-```json
-{
-  "detail": "Insufficient credits"
-}
-```
-
-### Reset Credits
-**PATCH** `/api/credits/{user_id}/reset`
-
-Reset user's credits to zero.
-
-**Response:**
-```json
-{
-  "message": "Credits reset to zero",
-  "user_id": 1,
-  "credits": 0,
-  "last_updated": "2025-01-14T12:45:30.345678"
-}
-```
-
-## Admin Operations
-
-### Trigger Daily Credits
-**POST** `/admin/trigger-daily-credits`
-
-Manually trigger the daily credits job (adds 5 credits to all users).
-
-**Response:**
-```json
-{
-  "message": "Daily credits job triggered successfully"
-}
-```
-
-## Schema Management
-
-### List Tables
-**GET** `/api/schema/tables`
-
-Get all tables in the database.
-
-**Response:**
-```json
-{
-  "tables": ["users", "credits", "products"]
-}
-```
-
-### Describe Table
-**GET** `/api/schema/tables/{table_name}/columns`
-
-Get column information for a specific table.
-
-**Response:**
-```json
-{
-  "table": "users",
-  "columns": [
-    {
-      "field": "user_id",
-      "type": "int",
-      "null": "NO",
-      "key": "PRI",
-      "default": null,
-      "extra": "auto_increment"
-    },
-    {
-      "field": "email",
-      "type": "varchar(255)",
-      "null": "NO",
-      "key": "UNI",
-      "default": null,
-      "extra": ""
-    }
-  ]
-}
-```
-
-### Create Table
-**POST** `/api/schema/tables`
-
-Create a new table dynamically.
-
-**Request Body:**
-```json
-{
-  "table_name": "products",
-  "columns": [
-    {
-      "name": "id",
-      "type": "INT AUTO_INCREMENT PRIMARY KEY",
-      "nullable": false
-    },
-    {
-      "name": "name",
-      "type": "VARCHAR(255)",
-      "nullable": false
-    },
-    {
-      "name": "price",
-      "type": "DECIMAL(10,2)",
-      "nullable": true,
-      "default": "0.00"
-    }
-  ]
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Table 'products' created successfully"
-}
-```
-
-### Add Column
-**POST** `/api/schema/columns`
-
-Add a new column to an existing table.
-
-**Request Body:**
-```json
-{
-  "table_name": "users",
-  "column": {
-    "name": "phone",
-    "type": "VARCHAR(20)",
-    "nullable": true
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Column 'phone' added to table 'users' successfully"
-}
-```
-
-### Drop Column
-**DELETE** `/api/schema/columns/{table_name}/{column_name}`
-
-Remove a column from a table.
-
-**Response:**
-```json
-{
-  "message": "Column 'phone' dropped from table 'users' successfully"
-}
-```
-
-### Drop Table
-**DELETE** `/api/schema/tables/{table_name}`
-
-Remove a table from the database.
-
-**Response:**
-```json
-{
-  "message": "Table 'products' dropped successfully"
-}
-```
-
-### Reflect Schema
-**POST** `/api/schema/reflect`
-
-Get the complete database schema structure.
-
-**Response:**
-```json
-{
-  "schema": {
-    "users": [
-      {
-        "name": "user_id",
-        "type": "int",
-        "nullable": false,
-        "key": "PRI",
-        "default": null,
-        "extra": "auto_increment"
-      }
-    ],
-    "credits": [
-      {
-        "name": "id",
-        "type": "int",
-        "nullable": false,
-        "key": "PRI",
-        "default": null,
-        "extra": "auto_increment"
-      }
-    ]
-  }
-}
-```
-
-## Health Check
-
-### Root Endpoint
-**GET** `/`
-
-Basic API status check.
-
-**Response:**
-```json
-{
-  "message": "Hello World"
-}
-```
+## API Endpoints
 
 ### Health Check
-**GET** `/health`
+- `GET /health` - Returns API health status
 
-API health status.
+### Users
+- `POST /users` - Create a new user
+- `GET /users` - List all users
+- `GET /users/{user_id}` - Get user by ID
+- `PUT /users/{user_id}` - Update user
+- `DELETE /users/{user_id}` - Delete user
 
-**Response:**
-```json
-{
-  "status": "healthy"
-}
-```
+### Credits
+- `GET /credits` - List all credits
+- `GET /credits/{user_id}` - Get credits for specific user
+- `POST /credits` - Create/update user credits
+- `PUT /credits/{user_id}` - Update user credits
 
-## Background Jobs
-
-### Daily Credits Distribution
-
-The system automatically adds 5 credits to all users:
-- **Startup**: Immediately when the server starts
-- **Daily**: Every day at midnight UTC (00:00)
+### Schema
+- `GET /schema` - Get database schema information
 
 ## Database Schema
 
 ### Users Table
-```sql
-CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+- `user_id` (Primary Key)
+- `email` (Unique)
+- `name`
+- `created_at`
+- `updated_at`
 
 ### Credits Table
-```sql
-CREATE TABLE credits (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    credits INT NOT NULL DEFAULT 0,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-```
+- `id` (Primary Key)
+- `user_id` (Foreign Key)
+- `credits`
+- `last_updated`
+
+## Background Tasks
+
+The application includes a scheduler that runs background tasks for automated credit management. The scheduler starts automatically when the application launches.
+
